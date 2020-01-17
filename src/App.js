@@ -1,21 +1,26 @@
 import React, { useEffect, useState } from 'react';
-import CardList from './component/CardList';
+import "rbx/index.css";
+import { Container, Column } from 'rbx';
+import ProductList from './component/productlist';
+
 
 const App = () => {
   const [data, setData] = useState({});
   const products = Object.values(data);
-  
-  useEffect(() => {
-    const fetchProducts = async () => {
-      const response = await fetch('./data/products.json');
-      const json = await response.json();
-      setData(json);
-    };
-    fetchProducts();
+ console.log(products);
+ useEffect(() => {
+   const fetchProducts = async () => {
+     const response = await fetch('./data/products.json');
+     const json = await response.json();
+     setData(json);
+   };
+   fetchProducts();
   }, []);
 
   return (
-    <CardList products={products}/>
+    <Container>
+    <ProductList products ={products} />
+    </Container>
   );
 };
 
