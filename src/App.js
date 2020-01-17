@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
+import CardList from './component/CardList';
 
 const App = () => {
   const [data, setData] = useState({});
   const products = Object.values(data);
+  
   useEffect(() => {
     const fetchProducts = async () => {
       const response = await fetch('./data/products.json');
@@ -13,9 +15,7 @@ const App = () => {
   }, []);
 
   return (
-    <ul>
-      {products.map(product => <li key={product.sku}>{product.title}</li>)}
-    </ul>
+    <CardList products={products}/>
   );
 };
 
