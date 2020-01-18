@@ -5,7 +5,7 @@ import React, { useState } from 'react';
 import SizeButton from './sizebutton';
 
  const Product = ({ product, addCartProduct }) => {
-     const imageSrc = `data/products/${product.sku}_2.jpg`;
+     const imageSrc = `data/products/${product.sku}_1.jpg`;
 
      const [size, setSize] = useState("");
 

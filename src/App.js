@@ -3,8 +3,8 @@ import "rbx/index.css";
 import { Container, Button } from 'rbx';
 import ProductList from './component/productlist';
 import Sidebar from 'react-sidebar';
+import Cart from './component/carts/carts';
 
-import carts from './component/carts/carts';
 
  const useCartProducts = () => {
    const [cartProducts, setCartProducts] = useState([]);
