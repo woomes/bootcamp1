@@ -7,64 +7,93 @@ import Cart from './component/carts/carts';
 
 
  const useCartProducts = () => {
-   const [cartProducts, setCartProducts] = useState([]);
+   const [cartProducts, setCartProducts] = useState({});
    const addCartProduct = (p, size) => {
+     const id = p.sku + size;
+     if (cartProducts[id]) {
+       const oldCartProduct = cartProducts[id];
+       const newCartProduct = {
+         ...oldCartProduct, quantity: oldCartProduct.quantity + 1
+       };
+       setCartProducts({...cartProducts, [id]: newCartProduct}); //overrides
+     } else{
+       const newCartProduct = {product: p, size: size, quanity: 1};
+       setCartProducts({...cartProducts, [id]: newCartProduct});
+     }
+   };
+   const removeCartProduct = cartProductId => {
      setCartProducts(
-       cartProducts.find(product => product.sku === p.sku) ?
-         cartProducts.map(product =>
-           product.sku === p.sku ?
-             { ...product, quantity: product.quantity + 1 }
-             :
-             product
-         )
-         :
-         [{ ...p, size, quantity: 1 }].concat(cartProducts)
+       Object.keys(cartProducts).filter(id => id !== cartProductId).reduce((total, id) => 
+       ({...total, [id]: cartProducts[id]}), {}
+       )
      );
-   }
-   const deleteCartProduct = (p) => {
-     setCartProducts(cartProducts.filter(product => product.sku !== p.sku))
-   }
-   return [cartProducts, addCartProduct, deleteCartProduct];
- }
-
-
-
-
+   };
+    
+   const emptyCart = () => {
+     setCartProducts({});
+   };
+  return [cartProducts, addCartProduct, removeCartProduct, emptyCart];
+  };
 
 const App = () => {
   const [data, setData] = useState({});
   const products = Object.values(data);
   const [cartOpen, setCartOpen] = useState(false);
+  const [cartProducts, addCartProduct, removeCartProduct, emptyCart] = useCartProducts();
+  const openCart = x => setCartOpen(x);
+     
+    useEffect(() =>  {
+      const fetchProducts = async () => {
+        const response = await fetch("./data/products.json");
+        const json = await response.json();
+        setData(json);
+        setProductsLoaded(true);
+      };
+      fetchProducts();
+    }, []);
+    
+    const [inventory, setInventory] = useState({});
+    const [productsLoaded, setProductsLoaded] = useState(false);
+    const [inventoryLoaded, setInventoryLoaded] = useState(false);
 
-  const [cartProducts, addCartProduct, deleteCartProduct] = useCartProducts();
- useEffect(() => {
-   const fetchProducts = async () => {
-     const response = await fetch('./data/products.json');
-     const json = await response.json();
-     setData(json);
-   };
-   fetchProducts();
-  }, []);
-
-  return (
-    <Sidebar
-       sidebar={<carts
-         cartProducts={cartProducts}
-         deleteCartProduct={deleteCartProduct} />}
-       open={cartOpen}
-       onSetOpen={setCartOpen}
-       pullRight
-     >
-       <Container>
-         <Button onClick={() => setCartOpen(true)}>
-           Open cart
-         </Button>
-         <ProductList
-           products={products}
-           addCartProduct={addCartProduct} />
-       </Container>
-     </Sidebar>
-   );
+    useEffect(() => {
+      const fetchInventory = async() => {
+        const response = await fetch("./data/inventory.json");
+        const json = await response.json();
+        setInventory(json);
+        setInventoryLoaded(true);
+      };
+      fetchInventory();
+    }, []);
+    return productsLoaded && inventoryLoaded ? (
+       <Sidebar
+          sidebar = {
+            <Container>
+              <Cart
+                openCart = {openCart}
+                cartProducts = {cartProducts}
+                removeCartProduct = {removeCartProduct}
+                emptyCart = {emptyCart}
+                />
+            </Container>
+          }
+          open = {cartOpen}
+          onSetOpen = {setCartOpen}
+          pullRight
+          >
+            <Container>
+              <Button onClick = {() => setCartOpen(true)}> Cart </Button>
+              <ProductList
+                inventory = {inventory}
+                products={products}
+                addCartProduct={addCartProduct}
+                openCart={openCart}
+                cartProducts={cartProducts} />
+            </Container>
+          </Sidebar>
+     ) : (
+       <h1>not ready</h1>
+     );
  };
 
 export default App;
