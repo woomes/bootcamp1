@@ -2,8 +2,12 @@ import React, { useEffect, useState } from 'react';
 import "rbx/index.css";
 import { Container, Button } from 'rbx';
 import ProductList from './component/productlist';
-import Sidebar from 'react-sidebar';
+import Sidebar from "react-sidebar";
 import Cart from './component/carts/carts';
+import db from "./component/db";
+import firebase from "firebase/app";
+import 'firebase/auth';
+import Authenticate from "./component/authenticate";
 
 
  const useCartProducts = () => {
@@ -41,30 +45,40 @@ const App = () => {
   const [cartOpen, setCartOpen] = useState(false);
   const [cartProducts, addCartProduct, removeCartProduct, emptyCart] = useCartProducts();
   const openCart = x => setCartOpen(x);
-     
-    useEffect(() =>  {
-      const fetchProducts = async () => {
-        const response = await fetch("./data/products.json");
-        const json = await response.json();
-        setData(json);
-        setProductsLoaded(true);
-      };
-      fetchProducts();
-    }, []);
-    
-    const [inventory, setInventory] = useState({});
-    const [productsLoaded, setProductsLoaded] = useState(false);
-    const [inventoryLoaded, setInventoryLoaded] = useState(false);
 
-    useEffect(() => {
-      const fetchInventory = async() => {
-        const response = await fetch("./data/inventory.json");
-        const json = await response.json();
-        setInventory(json);
-        setInventoryLoaded(true);
-      };
-      fetchInventory();
-    }, []);
+  useEffect(() => {
+    const fetchProducts = async () => {
+      const response = await fetch("./data/products.json");
+      const json = await response.json();
+      setData(json);
+      setProductsLoaded(true);
+    };
+    fetchProducts();
+  }, []);
+
+  const [inventory, setInventory] = useState({});
+  const [productsLoaded, setProductsLoaded] = useState(false);
+  const [inventoryLoaded, setInventoryLoaded] = useState(false);
+
+  useEffect(() => {
+    const handleData = snap => {
+      if (snap.val()) {
+       setInventory(snap.val());
+       setInventoryLoaded(true);
+     }
+   };
+   db.on("value", handleData, error => alert(error));
+   return () => {
+     db.off("value", handleData);
+    };
+  }, []);
+
+  const [user, setUser] = useState(null);
+  useEffect(() => {
+    firebase.auth().onAuthStateChanged(setUser);
+  }, []);
+
+   
     return productsLoaded && inventoryLoaded ? (
        <Sidebar
           sidebar = {
@@ -82,6 +96,7 @@ const App = () => {
           pullRight
           >
             <Container>
+            <Authenticate user={user} />
               <Button onClick = {() => setCartOpen(true)}> Cart </Button>
               <ProductList
                 inventory = {inventory}

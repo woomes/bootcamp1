@@ -6,7 +6,6 @@ const Cart = ({cartProducts, removeCartProduct, emptyCart, openCart}) => {
     return (
         <Card>
             <Card.Header>
-            <Title> Cart </Title>
             <Container>
                 <Title> Cart </Title>
                 <Button onClick = {() => openCart(false)}> X </Button>

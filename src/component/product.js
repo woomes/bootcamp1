@@ -64,6 +64,7 @@ const Product = ({productInventory, product, addCartProduct, openCart, cartProdu
             <Card.Image>
                 <Image.Container>
                 <Image src={`data/products/${product.sku}_1.jpg`}></Image>\
+                ''
                 </Image.Container>
             </Card.Image>
             <Card.Content>
