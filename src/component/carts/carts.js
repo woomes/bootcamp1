@@ -1,77 +1,142 @@
-import React from 'react';
+import React, {useEffect} from 'react';
 import "rbx/index.css";
-import {Box,Card,Title,Button,Image,Media,Content,Container} from 'rbx';
+import {Card, Button, Title, Delete, Container} from 'rbx';
+import db from "../db"
+import CartProduct from "../cartproduct"
 
-const Cart = ({cartProducts, removeCartProduct, emptyCart, openCart}) => {
+const subtotal = cartProducts => {
+    if (Object.keys(cartProducts).length > 0) {
+        return (
+          "Total : $ " +
+          Object.keys(cartProducts)
+            .reduce(
+              (total, id) =>
+                total + cartProducts[id].product.price * cartProducts[id].quantity,
+              0
+            )
+            .toFixed(2)
+            .toString()
+        );
+      } else {
+        return "Nothing in the cart";
+      }
+    };
+   
+const handleCheckout = (cartProducts, emptyCart, user) => {
+      if (user) {
+        const inventoryRef = db.ref("inventory/");
+        inventoryRef.transaction(inventory => {
+          if (inventory) {
+            Object.values(cartProducts).forEach(cp => {
+              const { product, size, quantity } = cp;
+              inventory[product.sku][size] -= quantity;
+            });
+          }
+          return inventory;
+        });
+        emptyCart(user);
+        alert("Successfully checked out");
+      } else {
+        alert("Please login to checkout");
+      }
+    };
+
+    const exceedInventoryHandler = (
+        cartProducts,
+        inventory,
+        updateShoppingCart,
+        user
+      ) => {
+        let userMessage = "";
+        let exceeds = false;
+      
+        const newCartProducts = Object.keys(cartProducts).reduce((newCart, id) => {
+          const { product, size, quantity } = cartProducts[id];
+          const available = inventory[product.sku][size];
+          if (available < quantity) {
+            exceeds = true;
+            if (inventory[product.sku][size] === 0) {
+              userMessage =
+                userMessage +
+                `${product.title} of size ${size} is out of stock. Removed from shopping cart\n`;
+              return newCart;
+            } else {
+              userMessage =
+                userMessage +
+                `Due to inventory change, reduced quantity of ${product.title} of size ${size} from ${quantity} to ${available}\n`;
+              return {
+                ...newCart,
+                [id]: {
+                  ...cartProducts[id],
+                  quantity: available
+                }
+              };
+            }
+          } else {
+            return { ...newCart, [id]: cartProducts[id] };
+          }
+        }, {});
+      
+        if (exceeds) {
+          alert(userMessage);
+          updateShoppingCart(newCartProducts, user);
+        }
+      };
+
+
+const renderCartProducts = (
+        inventory,
+        cartProducts,
+        addCartProduct,
+        removeCartProduct,
+        decrementCartProduct,
+        user
+      ) =>
+        Object.keys(cartProducts).map(id => {
+          const { product, quantity, size } = cartProducts[id];
+          return (
+            <CartProduct
+              key={id}
+              productInventory={inventory[product.sku]}
+              cartProducts={cartProducts}
+              product={product}
+              size={size}
+              quantity={quantity}
+              addCartProduct={addCartProduct}
+              removeCartProduct={removeCartProduct}
+              decrementCartProduct={decrementCartProduct}
+              user={user}
+            />
+          );
+        });
+
+const Cart = ({inventory, addCartProduct, decrementCartProduct, cartProducts, removeCartProduct, emptyCart, openCart, user, updateShoppingCart}) => {
+    useEffect(() => {
+      exceedInventoryHandler(cartProducts, inventory, updateShoppingCart, user);
+    }, [inventory, cartProducts, updateShoppingCart, user]);
     return (
         <Card>
-            <Card.Header>
-            <Container>
-                <Title> Cart </Title>
-                <Button onClick = {() => openCart(false)}> X </Button>
-            </Container>
-            </Card.Header>
-            <Card.Content>
-                <p>
-                {Object.keys(cartProducts).length > 0
-                ? Object.keys(cartProducts)
-                 .reduce(
-                   (total, id) =>
-                     total +
-                     cartProducts[id].product.price * cartProducts[id].quantity,
-                   0
-                 )
-             : "Nothing in cart"}
-                 </p>
+          <Card.Header.Title align="centered">
+            <Title>Cart</Title>
+            <Delete onClick={() => openCart(false)}></Delete>
+          </Card.Header.Title>
+          <Card.Content>
+            <p>{subtotal(cartProducts)}</p>
+            <Button onClick={() => handleCheckout(cartProducts, emptyCart, user)}>
+              Checkout
+            </Button>
+            <Button onClick={() => emptyCart(user)}>Clear</Button>
+            {renderCartProducts(
+              inventory,
+              cartProducts,
+              addCartProduct,
+              removeCartProduct,
+              decrementCartProduct,
+              user
+            )}
+          </Card.Content>
+        </Card>
+      );
+    };
 
-            <Button>Checkout</Button>
-            <Button onClick={() => emptyCart()}>Clear</Button>
-            {Object.keys(cartProducts).map(id => {
-                const { product, quantity, size } = cartProducts[id];
-                return (
-                    <CartProduct
-                        key={id}
-                        product={product}
-                        size={size}
-                        quantity={quantity}
-                        removeCartProduct={removeCartProduct}
-                    />
-           );
-         })}
-       </Card.Content>
-     </Card>
-   );
- };
-
-
-const CartProduct = ({product, size, quantity, removeCartProduct}) => {
-    const {sku, title, price, currencyFormat} = product;
-    const imgsrc = `data/products/${sku}_1.jpg`;
-    return(
-        <Box>
-            <Media>
-                <Media.Item>
-                    <Image.Container>
-                        <Image src = {imgsrc}></Image>
-                    </Image.Container>
-                </Media.Item>
-                <Media.Item>
-                    <Content>
-                        <Button onClick={() => removeCartProduct(product)}> x </Button>
-                        <p>
-                            Title : {title}
-                            <br />
-                            Quantity: {quantity}
-                            <br />
-                            Size: {size}
-                            <br />
-                            Price: {currencyFormat}{price}
-                        </p>
-                    </Content>
-                </Media.Item>
-            </Media>
-        </Box>
-    );
-};
-
-export default Cart;
+    export default Cart;

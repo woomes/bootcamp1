@@ -1,21 +1,13 @@
 import "rbx/index.css";
 import {Card, Button, Image, Title, Container} from 'rbx';
 import React, { useState } from 'react';
-
-const numQuanitityInCart = (product, size, cartProducts) => {
-    const id = product.sku + size;
-    return cartProducts[id]? cartProducts[id].quantity : 0;
-};
-
-const getAvailableStock = (cartProducts, productInventory, product) => 
-    Object.keys(productInventory).reduce(
-        (stock, size) => ({...stock,
-            [size]: productInventory[size] - numQuanitityInCart(product,size, cartProducts)
-        }), {}
-    );
+import { getAvailableStock } from "./utils";
 
 
-const Product = ({productInventory, product, addCartProduct, openCart, cartProducts}) => {
+
+
+
+const Product = ({productInventory, product, addCartProduct, openCart, cartProducts, user}) => {
     const [chosenSize, setChosenSize] = useState("");
 
     const renderOutOfStock = () => {
@@ -63,8 +55,7 @@ const Product = ({productInventory, product, addCartProduct, openCart, cartProdu
         <Card>
             <Card.Image>
                 <Image.Container>
-                <Image src={`data/products/${product.sku}_1.jpg`}></Image>\
-                ''
+                <Image src={`data/products/${product.sku}_1.jpg`}></Image>
                 </Image.Container>
             </Card.Image>
             <Card.Content>
